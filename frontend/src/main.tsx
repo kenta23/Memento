@@ -11,9 +11,7 @@ import { Link } from 'react-router-dom'
 import SignIn from './components/Signin.tsx'
 import Note from './components/Note.tsx'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { extractRouterConfig } from "uploadthing/server";
 import Allnotes from './components/Allnotes.tsx'
-import { OurFileRouter } from '../../backend/src/uploadthing.ts'
 import CreateNew from './components/CreateNew.tsx'
 // Import your publishable key
 

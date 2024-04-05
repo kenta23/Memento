@@ -3,8 +3,8 @@ import Navbar from "./components/Navbar";
 import Sidebar from "./components/Sidebar";
 import { EdgeStoreProvider } from "./lib/edgestore";
 
-export default  function Root() {
 
+export default  function Root() {
   return (
     <EdgeStoreProvider basePath="http://localhost:3000/edgestore">
       <div className="min-w-full min-h-full">

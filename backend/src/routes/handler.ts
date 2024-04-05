@@ -25,34 +25,14 @@ const prisma = new PrismaClient();
 const upload = multer({ dest: 'uploads/' });
 
 
-router.post('/newdata', async (req, res) => {
+router.post('/postdata', async (req, res) => {
    const { title, text, userid, tags, imageData } = await req.body;     
 
    const parsedImagedata = JSON.parse(imageData);
    const parsedTags = JSON.parse(tags);
-   // Process imageData array
-   parsedImagedata.forEach(async (image: imageDataType) => {
-    const url = image.url;
-    const thumb = image.thumb;
 
-    // Process each image URL and thumbnail such storing it in the database 
-    console.log('Image URL:', url);
-    console.log('Thumbnail URL:', thumb);
-
-    const data = await prisma.images.create({
-         data: {
-             url: url,
-             thumb: thumb
-         }
-    }).then((res) => {
-         console.log(res)
-    }).catch((err) => {
-         console.log(err)
-    })
-  });
-
-
-   await prisma.notes.create({
+   //note data
+  const newnote = await prisma.notes.create({
      data: {
          text: text,
          title: title,
@@ -64,7 +44,41 @@ router.post('/newdata', async (req, res) => {
          }
      }
    })
+  
+   // Process imageData array
+   parsedImagedata.forEach(async (image: imageDataType) => {
+    const url = image.url;
+    const thumb = image.thumb;
+
+    // Process each image URL and thumbnail such storing it in the database 
+    console.log('Image URL:', url);
+    console.log('Thumbnail URL:', thumb);
+
+    await prisma.images.createMany({
+         data: [
+               {
+                 url: url,
+                 thumbnail: thumb,
+                 noteId: newnote.id
+                }
+           ]
+    }).then((res) => {
+         console.log(res)
+    }).catch((err) => {
+         console.log(err)
+    })
+  });
+
+   res.status(200).json({
+     message: 'successfully created new note',
+   })
 })
+
+router.get('/get', (req, res) => {
+     res.json({ message: 'Hello World!' });
+})
+
+export default router;
  
 
 

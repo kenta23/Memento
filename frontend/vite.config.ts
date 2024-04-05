@@ -9,23 +9,20 @@ export default defineConfig({
 
   server: {
     cors: true,
-    origin: "http://localhost:3000",
     proxy: {
       "/api": {
         target: "http://localhost:3000/",
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, ""), //the api route is just 'http:localhost:3000/'
       },
-      "/users": {
+      "/postdata": {
         target: "http://localhost:3000/",
-        changeOrigin: true,
+        changeOrigin: true, 
       },
-      // Wildcard path matching
-      "/(.*)": {
+      "/getdata": {
         target: "http://localhost:3000/",
-        changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/(.*?)(\/|$)/, "$1"),
-      },
+        changeOrigin: true, 
+      }
     },
   },
   plugins: [react()],

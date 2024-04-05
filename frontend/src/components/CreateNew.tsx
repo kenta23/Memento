@@ -4,23 +4,21 @@ import HashtagInput from './Tags'
 import axios from 'axios';
 import { useMutation } from '@tanstack/react-query';
 import { toast } from 'react-toastify';
-import { useUser } from '@clerk/clerk-react';
+import { useAuth, useUser } from '@clerk/clerk-react';
 import { useEdgeStore } from '@/lib/edgestore';
-
-type Note = {
-  title: string;
-  text: string;
-}
+import { useForm, FieldValues } from 'react-hook-form'
 
 export default function CreateNew() {
     const addPhoto = useRef<HTMLInputElement>(null);
     const [images, setImages] = useState<File[]>([]);
     const { user } = useUser();
+    const { register, formState: { errors }, setValue, handleSubmit } = useForm({
+      defaultValues: {
+          title: '',
+          note: ''
+      }
+    });
     const { edgestore } = useEdgeStore();
-    const [noteData, setNoteData] = useState<Note>({
-       text: '',
-       title: ''
-    })
     const [tags, setTags] = useState<string[]>([]);
     const [inputValue, setInputValue] = useState('');
     const [imageData, setImageData] = useState([{
@@ -28,12 +26,15 @@ export default function CreateNew() {
       thumb: ''
     }])
     const {data, isError, mutate, status, isPending } = useMutation({
-      mutationFn: async (newdata: FormData) => await axios.post('/newnote', newdata, {
-         headers: {
-           "Content-Type": 'multipart/form-data'
-         }
+      mutationFn: async (newdata: FormData) => await axios.post('/postdata', newdata, {
+          headers: {
+             "Content-Type": "application/json",
+             "Authorization": `Bearer ${user?.id}`
+          },
       })
     })
+
+    console.log(data);
   
     const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
       if (e.key === 'Enter' && inputValue.trim() !== '') {
@@ -55,94 +56,102 @@ export default function CreateNew() {
         }
      }
 
-    async function submitData(e: React.FormEvent<HTMLFormElement>) {
-       e.preventDefault();
-       const formData = new FormData();
-      
-      if(!noteData) {
-         toast.info('No content!');
-         return;
-      }
-
-       formData.append('title', noteData.title);
-       formData.append('note', noteData.text);
-       formData.append('tags', JSON.stringify(tags, undefined, 2));
-       formData.append('userid', user?.id as string);
-
+  async function submitData(data: FieldValues) {
+   const formData = new FormData();
    if (images.length) {
-    const uploadImage = await Promise.all(
-       images.map(async (image) => {
-         try {
-           const res = await edgestore.publicFiles.upload({
-             file: image,
-             onProgressChange: async (progress) => {
-               toast.loading(`Uploading ${progress}%`);
-             },
-           });
-           console.log("image res", res);
-          /* setImageData((prev) => [
-             ...prev,
-             {
-               url: res.url,
-               thumb: res.thumbnailUrl as string,
-             },
-           ]); */
-           //formData.append("images", JSON.stringify(imageData));
-            return {
-               url: res.url,
-               thumb: res.thumbnailUrl as string,
-            }
-         } catch (error: unknown) {
-           toast.error("Failed to upload image");
-         }
+    try {
+      //MULTIPLE IMAGE UPLOAD
+      await Promise.all(
+        images.map(async (image) => {
+          try {
+            const res = await edgestore.publicFiles.upload({
+              file: image,
+              onProgressChange: async (progress) => {
+                toast.loading(`Uploading ${progress}%`);
+              },
+            });
+  
+            // Append image data to formData     
+            const imageUploaded = { 
+              url: res.url, 
+              thumb: res.thumbnailUrl as string 
+            };
+            formData.append("imageData", JSON.stringify(imageUploaded));
+            //formData.append("url", res.url);
+            //formData.append('thumbnail', res.thumbnailUrl as string);
+          } catch (error: unknown) {
+            toast.error("Failed to upload image");
+            console.error("Error uploading image:", error);
+          }
+        })
+      ); 
+      //SINGLE IMAGE UPLOAD
+     /*  const res = await edgestore.publicFiles.upload({
+          file: images[0],
+          onProgressChange: async (progress) => {
+            toast.loading(`Uploading ${progress}%`);
+          },
        })
-     );
-
-     uploadImage.forEach(image => {
-         if(image) formData.append("images", JSON.stringify(image));
-     })
+      
+       // Append image data to formData
+       formData.append("url", res.url);
+       formData.append('thumbnail', res.thumbnailUrl as string); */
+      //formData.append('imageData',JSON.stringify(imageData))
+   } catch(error) {
+      console.log(error)
    } 
-
-     mutate(formData, {
-        onError: (err) => { 
-            console.log(err)
-        },
-        onSuccess: () => {
-          toast('Note created successfully', {
-             autoClose: 5000,
-          })
-        }
-     }) 
   }
 
-  return (
-    <div className="px-12 py-6 flex items-start justify-center h-full min-h-screen w-full">
-      <div className="h-auto shadow-lg w-[85%] border rounded-xl">
-      <form action="" onSubmit={submitData} encType="multipart/form-data">
+  formData.append('title', data?.title)
+  formData.append('note', data?.note);
+  formData.append('tags', JSON.stringify(tags));
+  formData.append('userid', user?.id as string);
 
+  mutate(formData, {
+    onError: (err) => { 
+        console.log(err)
+    },
+    onSuccess: () => {
+      toast('Note created successfully', {
+         autoClose: 5000,
+      })
+    }
+ }, ) 
+   for(const entry of formData.entries()) {
+      console.log(entry[0], entry[1])
+   }
+}
+
+
+  return (
+    <div className="lg:px-12 py-6 flex items-start justify-center h-full min-h-screen w-min md:w-full">
+      <div className="h-auto shadow-lg w-full md:w-[85%] border rounded-xl">
+      <form method='POST' onSubmit={handleSubmit(submitData)} >
         <div className='px-4 py-2 border'>
             <input 
-               type="text" 
+               {...register('title')}
+               type="text"   
                className='w-full outline-none'
-               value={noteData.title}
-               onChange={(e) => setNoteData(prev => ({...prev, title: e.target.value}))}  
+               //value={noteData.title}
+               //onChange={(e) => setNoteData(prev => ({...prev, title: e.target.value}))}  
                placeholder="Title" 
             />
-        </div>
+        </div> 
           <div className="flex p-4 text-[#90A0A9] items-center">
-             <HashtagInput 
+               <HashtagInput 
                  tags={tags} 
                  setInputValue={setInputValue}  
                  inputValue={inputValue} 
                  handleKeyDown={handleKeyDown} 
                  handleDeleteTag={handleDeleteTag}
-              />
+            /> 
           </div>
   
         <div className="px-4 py-2">
           <textarea
-            value={noteData.text}
-            onChange={(e) => setNoteData(prev => ({...prev, text: e.target.value}))}
+             {...register('note', { maxLength: { value: 500, message: "Maximum value reached" } })}
+            //value={noteData.text}
+            //onChange={(e) => setNoteData(prev => ({...prev, text: e.target.value}))}
             placeholder="Enter note"
             className="w-full outline-none h-auto indent-3 resize-none"
           />
@@ -162,6 +171,7 @@ export default function CreateNew() {
         <div className="mb-6 flex-row items-center gap-8 justify-end flex me-6">
           <button
             className="flex items-center gap-2"
+            type="button"
             onClick={() => addPhoto.current?.click()}
           >
             <Camera />
