@@ -12,8 +12,7 @@ import multer from 'multer';
 import clerkclient from '@clerk/clerk-sdk-node';
 
 
-
-interface CustomRequest extends Request {
+export interface CustomRequest extends Request {
     userId?: string;
 }
 const app = express();
@@ -103,7 +102,7 @@ app.post('/postdata',upload.none(), middlewareUser, async (req, res) => {
         },
       });
 
-      if (imageData.length !== 0 && imageData !== undefined) {
+      if (imageData !== undefined) {
         try {
             // Iterate over the imageData array
             for (const imageArray of imageData) {
@@ -149,8 +148,7 @@ app.post('/postdata',upload.none(), middlewareUser, async (req, res) => {
 }) 
  
 
-
-app.get('/getdata', middlewareUser, async (req: CustomRequest, res) => {
+/*app.get('/getdata', middlewareUser, async (req: CustomRequest, res) => {
     try {
         const userId = req.userId;
 
@@ -165,9 +163,10 @@ app.get('/getdata', middlewareUser, async (req: CustomRequest, res) => {
         console.log(error)
     } 
     
-})
+}) */
 
-//uploadthing API
+
+app.use('/api', router)
 app.listen(port, () => {
     console.log(`Server is listening on port ${port}`);
 })
