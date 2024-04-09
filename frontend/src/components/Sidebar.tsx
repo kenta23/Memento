@@ -2,6 +2,8 @@ import { Plus, ScrollText, ArchiveRestore, Heart, Tags, Folders, Menu } from 'lu
 import { useState } from 'react'
 import { Link, NavLink, useLocation } from 'react-router-dom'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog'
+import { Input } from './ui/input'
+import { Label } from './ui/label'
 
 const noteOptions = [
      {
@@ -122,10 +124,28 @@ return (
                 </NavLink>
               </div>
             ))}
+            <Dialog>
             <div className="flex items-center gap-1 text-[#3B95C8]">
               <Plus size={18} />
-              <span>Add</span>
+              <DialogTrigger>Add</DialogTrigger>
+              <DialogContent className='bg-slate-100 shadow-xl space-y-6'>
+                <DialogHeader>
+                  <DialogTitle>Add Tag</DialogTitle>
+                  <DialogDescription>
+                    <div className='flex flex-col gap-2'>
+                    <div className='flex w-auto gap-2 items-center'>
+                      <Label >
+                         Add Tag name
+                      </Label> 
+                      <Input type='text' placeholder='Tag name' className='w-[300px] placeholder-slate-500'/>
+                     </div>
+                       <button className='bg-[#3B95C8] text-white text-md p-2 rounded'>Save</button>
+                    </div>
+                  </DialogDescription>
+                </DialogHeader>
+              </DialogContent>
             </div>
+         </Dialog>
           </div>
         </div>
 
@@ -152,12 +172,19 @@ return (
             <div className="flex items-center gap-1 text-[#3B95C8]">
               <Plus size={18} />
               <DialogTrigger>Add</DialogTrigger>
-              <DialogContent>
+              <DialogContent className='bg-slate-100 shadow-xl space-y-6'>
                 <DialogHeader>
-                  <DialogTitle>Are you absolutely sure?</DialogTitle>
+                  <DialogTitle>Add Folder</DialogTitle>
                   <DialogDescription>
-                    This action cannot be undone. This will permanently delete
-                    your account and remove your data from our servers.
+                    <div className='flex flex-col gap-2'>
+                    <div className='flex w-auto gap-2 items-center'>
+                      <Label >
+                         Add Folder name
+                      </Label> 
+                      <Input type='text' placeholder='Folder name' className='w-[300px] placeholder-slate-500'/>
+                     </div>
+                       <button className='bg-[#3B95C8] text-white text-md p-2 rounded'>Save</button>
+                    </div>
                   </DialogDescription>
                 </DialogHeader>
               </DialogContent>

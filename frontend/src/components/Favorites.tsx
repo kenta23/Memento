@@ -1,67 +1,53 @@
-
-import { useAuth } from '@clerk/clerk-react';
 import { useQuery } from '@tanstack/react-query';
+import React from 'react'
+import { useAuth } from '@clerk/clerk-react';
 import axios from 'axios';
-import { Archive, EllipsisVertical, Heart } from 'lucide-react'
-import { useEffect, useState } from 'react';
-import { Link, NavLink, useNavigate } from 'react-router-dom'
-import { noteData, Image, Tag } from '@/types';
-import { Suspense } from 'react';
+import { noteData } from '@/types';
 import { Popover, PopoverContent, PopoverTrigger} from '../../@/components/ui/popover'
+import { Archive, EllipsisVertical, Heart } from 'lucide-react';
 import { formatDate } from '@/lib/formats';
+import { useNavigate } from 'react-router-dom';
 
 
-export default function Allnotes() {
-  const navigate = useNavigate();
-  const { userId } = useAuth();
-  const [open, setOpen] = useState<boolean>(false);
 
-  const { data, isPending, isError, isLoading, status } = useQuery({
-     queryKey: ['allnotes'],
-     queryFn: async () => await axios.get('/getdata', {
-          headers: { Authorization: `Bearer ${userId}` },
-     }),
-     _optimisticResults: 'optimistic'
-  })
-
-  console.log(data);
-  
-
-  // Sort by createdAt property in ascending order (oldest to newest)
-
-  return (
-    <div className="w-full px-12 py-6 h-full min-h-screen">
-      <div className="h-[50px] w-[320px] px-6  bg-[#CAE5F1] flex items-center rounded-full">
-        <input
-          placeholder="Search"
-          className="outline-none bg-transparent z-10 py-2 w-full"
-        />
-      </div>
-
-      <div className="mt-12 mb-6">
-        <div className="flex flex-col items-start gap-2">
-          <h1 className="text-3xl font-bold">All Notes</h1>
-
-          {/**FILTER NOTE SECTION */}
-          <div className="flex text-[#677480] items-center gap-3 ">
-            <button
-              className="cursor-pointer active:scale-105"
-
-            >
-              Latest
-            </button>
-            <button
-              className="cursor-pointer active:scale-105"
-  
-            >
-              Oldest
-            </button>
+export default function Favorites() {
+        const navigate = useNavigate();
+        const { userId } = useAuth();
+        const {data, isLoading, isError, isPending } = useQuery({
+          queryKey: ['archives'],
+          queryFn: async () => await axios.get('/favorites', {
+            headers: {
+               Authorization: `Bearer ${userId}`
+            }
+          })
+        })
+    
+        console.log('favorites', data);
+    
+      return (
+        <div className="w-full px-12 py-6 h-full min-h-screen">
+          <div className="h-[50px] w-[320px] px-6  bg-[#CAE5F1] flex items-center rounded-full">
+            <input
+              placeholder="Search"
+              className="outline-none bg-transparent z-10 py-2 w-full"
+            />
           </div>
-        </div>
+    
+          <div className="mt-12 mb-6">
+            <div className="flex flex-col items-start gap-2">
+              <h1 className="text-3xl font-bold">Favorites</h1>
+    
+              {/**FILTER NOTE SECTION */}
+              <div className="flex text-[#677480] items-center gap-3 ">
+                <button className="cursor-pointer active:scale-105">Latest</button>
+                <button className="cursor-pointer active:scale-105">Oldest</button>
+              </div>
+    
+              <div className="mt-6 max-h-[620px] overflow-y-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 items-center"></div>
+            </div>
 
-        {/**NOTE CARDS LIST */}
 
-        {isLoading || isPending ? (
+            {isLoading || isPending ? (
           <p>Loading data</p>
         ) : (
           <div className="mt-6 max-h-[620px] overflow-y-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 items-center">
@@ -145,7 +131,9 @@ export default function Allnotes() {
             )}
           </div>
         )}
-      </div>
-    </div>
-  );
+          </div>
+    
+        </div>
+      );
 }
+

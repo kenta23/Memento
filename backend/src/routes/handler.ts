@@ -3,7 +3,7 @@ import dotenv from 'dotenv';
 import bodyParser from 'body-parser';
 import cors, { CorsOptions } from 'cors';
 import cookieParser from 'cookie-parser'
-import { PrismaClient } from '@prisma/client';
+import { Prisma, PrismaClient } from '@prisma/client';
 import multer from 'multer';
 import { imageDataType } from '../types';
 import { CustomRequest } from '..';
@@ -70,11 +70,13 @@ router.get('/getdata', async (req: CustomRequest, res) => {
     }
  })
 
-router.get('/archived', async (req: CustomRequest, res) => {
+router.get('/archive', async (req: CustomRequest, res) => {
+     const userid = req.userId;
       try {
           const data = await prisma.notes.findMany({
                where: {
-                  archived: true
+                  archived: true,
+                  userId: userid, 
                },   
                include: {
                      Images: true,
@@ -87,11 +89,12 @@ router.get('/archived', async (req: CustomRequest, res) => {
       }
 })
 
-router.get('/favorites', async(req, res) => {
+router.get('/favorites', async(req: CustomRequest, res) => {
      try {
          const data = await prisma.notes.findMany({
               where: {
-                 favorite: true
+                 favorite: true,
+                 userId: req.userId
               },   
               include: {
                     Images: true,
@@ -119,6 +122,79 @@ router.get('/ascending', async (req, res) => {
      } catch (error) {
          res.status(404).json({ error: error });
      }
+})
+
+//update data 
+router.post('/updatedata', async (req, res) => {
+  const { title, tags, note, id, imageData } = req.body;
+
+  // Check if 'id' exists in the req.body object before proceeding
+  if (!id) {
+    return res
+      .status(400)
+      .json({ error: "Note id is missing in the request body" });
+  }
+
+  const updatedData = await prisma.notes.update({
+    where: {
+      id: Number(id),
+    },
+    data: {
+      title: title ?? "",
+      text: note ?? "",
+    },
+  });
+
+  if (tags) {
+    const parsedTags = JSON.parse(tags);
+
+    await prisma.tags.update({
+      where: {
+        id: updatedData.id,
+      },
+      data: {
+        tagNames: {
+          set: parsedTags,
+        },
+      },
+    });
+  }
+
+  if (imageData !== undefined) {
+    try {
+      // Iterate over the imageData array
+      for (const imageArray of imageData) {
+        if (Array.isArray(imageArray)) {
+          for (const imageString of imageArray) {
+            const { url, thumb } = JSON.parse(imageString);
+            const newImage = await prisma.images.create({
+              data: {
+                url,
+                thumbnail: thumb,
+                noteId: updatedData.id,
+              },
+            });
+            console.log("NEW IMAGE", newImage);
+          }
+        } else {
+          // If it's not an array, parse the JSON string directly
+          const { url, thumb } = JSON.parse(imageArray);
+          await prisma.images.create({
+            data: {
+              url,
+              thumbnail: thumb,
+              noteId: updatedData.id,
+            },
+          });
+        }
+      }
+    } catch (error) {
+      console.error("Error uploading images:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  }
+
+  res.status(200).json(updatedData);
 })
 router.get('/')
 

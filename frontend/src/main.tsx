@@ -13,6 +13,7 @@ import Note from './components/Note.tsx'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import Allnotes from './components/Allnotes.tsx'
 import CreateNew from './components/CreateNew.tsx'
+import Favorites from './components/Favorites.tsx'
 // Import your publishable key
 
 const PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY
@@ -35,7 +36,7 @@ const router = createBrowserRouter([
            },
            {
             path: '/note/:id',
-            element: <Note />,
+            element: <Note />, 
            },
            {
             path: '/archives',
@@ -44,6 +45,10 @@ const router = createBrowserRouter([
            {
             path: 'create-new',
             element: <CreateNew />
+           },
+           {
+            path: '/favorites',
+            element: <Favorites />
            }
        ],
    }, 

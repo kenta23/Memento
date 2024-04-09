@@ -23,9 +23,25 @@ export default defineConfig({
         target: "http://localhost:3000/api/",
         changeOrigin: true, 
       },
-      "/note/:id": {
+      "/updatedata": {
         target: "http://localhost:3000/api/",
         changeOrigin: true, 
+      },
+      "/favorites": {
+        target: "http://localhost:3000/api/",
+        changeOrigin: true, 
+      },
+      "/archive": {
+        target: "http://localhost:3000/api/",
+        changeOrigin: true,
+      },
+      "/ascending": {
+        target: "http://localhost:3000/api/",
+        changeOrigin: true,
+      },
+      "/descending": {
+        target: "http://localhost:3000/api/",
+        changeOrigin: true,
       }
     },
   },

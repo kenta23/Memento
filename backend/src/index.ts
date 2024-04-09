@@ -77,7 +77,7 @@ app.use('/note', router);
 
 app.post('/postdata',upload.none(), middlewareUser, async (req, res) => {
     try {
-      const { title, note, userid, tags, url, thumbnail, imageData } = await req.body;
+      const { title, note, userid, tags, imageData } = await req.body;
       //const parsedTags = Array.isArray(tags) ? tags.filter(tag => typeof tag === 'string') : [];
       const parsedTags = JSON.parse(tags);
       
@@ -166,7 +166,8 @@ app.post('/postdata',upload.none(), middlewareUser, async (req, res) => {
 }) */
 
 
-app.use('/api', router)
+app.use('/api', router);
+
 app.listen(port, () => {
     console.log(`Server is listening on port ${port}`);
 })
