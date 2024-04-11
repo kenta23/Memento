@@ -6,7 +6,6 @@ import { ClerkProvider } from '@clerk/clerk-react'
 import SignInPage from './sign-in/[[...index]].tsx'
 import SignUpPage from './sign-up/[[...index]].tsx'
 import Root from './Root.jsx' 
-import Archive from './components/Archive.tsx'
 import { Link } from 'react-router-dom'
 import SignIn from './components/Signin.tsx'
 import Note from './components/Note.tsx'
@@ -14,6 +13,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import Allnotes from './components/Allnotes.tsx'
 import CreateNew from './components/CreateNew.tsx'
 import Favorites from './components/Favorites.tsx'
+import Archives from './components/Archive.tsx'
 // Import your publishable key
 
 const PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY
@@ -40,7 +40,7 @@ const router = createBrowserRouter([
            },
            {
             path: '/archives',
-            element: <Archive />,
+            element: <Archives />,
            },
            {
             path: 'create-new',
@@ -59,11 +59,6 @@ const router = createBrowserRouter([
    {
     path: '/sign-up',
     element: <SignUpPage />,
-   },
-   {
-      path: '/archive',
-      element: <Archive />,
-
    },
    {
     path: '/signin',

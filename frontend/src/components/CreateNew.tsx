@@ -1,31 +1,33 @@
-import { Camera, X, } from 'lucide-react'
+import { Camera, Check, X, } from 'lucide-react'
 import React, { useRef, useState, KeyboardEvent } from 'react'
 import HashtagInput from './Tags'
 import axios from 'axios';
 import { useMutation } from '@tanstack/react-query';
 import { toast } from 'react-toastify';
-import { useAuth, useUser } from '@clerk/clerk-react';
+import {  useUser } from '@clerk/clerk-react';
 import { useEdgeStore } from '@/lib/edgestore';
 import { useForm, FieldValues } from 'react-hook-form'
+import { useToast } from './ui/use-toast';
 
 export default function CreateNew() {
     const addPhoto = useRef<HTMLInputElement>(null);
     const [images, setImages] = useState<File[]>([]);
     const { user } = useUser();
-    const { register, formState: { errors }, setValue, handleSubmit } = useForm({
+    const { register, formState: { errors }, setValue, handleSubmit, reset: resetFields } = useForm({
       defaultValues: {
           title: '',
           note: ''
       }
     });
     const { edgestore } = useEdgeStore();
+    const { toast } = useToast();
     const [tags, setTags] = useState<string[]>([]);
     const [inputValue, setInputValue] = useState('');
     const [imageData, setImageData] = useState([{
       url: '',
       thumb: ''
     }])
-    const {data, isError, mutate, status, isPending } = useMutation({
+    const {data, isError, mutate, status, isPending, reset } = useMutation({
       mutationFn: async (newdata: FormData) => await axios.post('/postdata', newdata, {
           headers: {
              "Content-Type": "application/json",
@@ -61,13 +63,16 @@ export default function CreateNew() {
    if (images.length) {
     try {
       //MULTIPLE IMAGE UPLOAD
+     if(images.length > 1){
       await Promise.all(
         images.map(async (image) => {
           try {
             const res = await edgestore.publicFiles.upload({
               file: image,
               onProgressChange: async (progress) => {
-                toast.loading(`Uploading ${progress}%`);
+                toast({
+                    title: `Uploading ${progress}%`
+                });
               },
             });
   
@@ -80,23 +85,35 @@ export default function CreateNew() {
             //formData.append("url", res.url);
             //formData.append('thumbnail', res.thumbnailUrl as string);
           } catch (error: unknown) {
-            toast.error("Failed to upload image");
+            toast({
+               title: "Failed to upload image"
+            });
             console.error("Error uploading image:", error);
           }
         })
       ); 
-      //SINGLE IMAGE UPLOAD
-     /*  const res = await edgestore.publicFiles.upload({
+     }
+     else {
+         //SINGLE IMAGE UPLOAD
+       const res = await edgestore.publicFiles.upload({
           file: images[0],
           onProgressChange: async (progress) => {
-            toast.loading(`Uploading ${progress}%`);
+            toast({
+               title: `Uploading ${progress}%`
+            });
           },
        })
       
        // Append image data to formData
-       formData.append("url", res.url);
-       formData.append('thumbnail', res.thumbnailUrl as string); */
-      //formData.append('imageData',JSON.stringify(imageData))
+        // Check if res.url and res.thumbnailUrl are defined before appending
+
+          const imageUploaded = {
+            url: res.url,
+            thumb: res.thumbnailUrl as string,
+          }
+          
+          formData.append("imageData", JSON.stringify(imageUploaded));
+        }     
    } catch(error) {
       console.log(error)
    } 
@@ -112,17 +129,28 @@ export default function CreateNew() {
         console.log(err)
     },
     onSuccess: () => {
-      toast('Note created successfully', {
-         autoClose: 5000,
+      toast({
+          title: "Successfully created new note",
+          description: 
+          <div className='flex w-full flex-row gap-4 items-center justify-between'>
+          <p>new note created</p>
+          <Check color='#68e988' size={24}/>
+      </div>
+      })
+      reset();
+      setImages([]);
+      setTags([]);
+      resetFields({
+        note: '',
+        title: ''
       })
     }
  }, ) 
    for(const entry of formData.entries()) {
       console.log(entry[0], entry[1])
    }
+   
 }
-
-
   return (
     <div className="lg:px-12 py-6 flex items-start justify-center h-full min-h-screen w-min md:w-full">
       <div className="h-auto shadow-lg w-full md:w-[85%] border rounded-xl">

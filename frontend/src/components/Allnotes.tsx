@@ -1,18 +1,20 @@
 
 import { useAuth } from '@clerk/clerk-react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
-import { Archive, EllipsisVertical, Heart } from 'lucide-react'
-import { useEffect, useState } from 'react';
-import { Link, NavLink, useNavigate } from 'react-router-dom'
-import { noteData, Image, Tag } from '@/types';
-import { Suspense } from 'react';
+import { Archive, Check, EllipsisVertical, Heart } from 'lucide-react'
+import {  useState } from 'react';
+import { useNavigate } from 'react-router-dom'
+import { noteData } from '@/types';
 import { Popover, PopoverContent, PopoverTrigger} from '../../@/components/ui/popover'
 import { formatDate } from '@/lib/formats';
+import { useToast } from './ui/use-toast';
 
 
 export default function Allnotes() {
+  const queryclient = useQueryClient();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const { userId } = useAuth();
   const [open, setOpen] = useState<boolean>(false);
 
@@ -26,9 +28,31 @@ export default function Allnotes() {
 
   console.log(data);
   
+  async function deleteData(id: number) {
+    try {
+      const res = await axios.post(`http://localhost:3000/api/delete/${id}`, null, {
+  
+          headers: {
+              'Authorization': `Bearer ${userId}`,
+          }
+      })
+      console.log(res.data);
+      toast({
+        title: "Deleted",
+        description: 
+         <div className='flex w-full flex-row gap-4 items-center justify-between'>
+            <p>Successfully deleted data</p>
+            <Check color='#68e988' size={24}/>
+        </div>
+     })
+      queryclient.invalidateQueries({ queryKey: ['allnotes']})
+     } catch (error) {
+       console.log(error)
+     }
+  }
+  
 
   // Sort by createdAt property in ascending order (oldest to newest)
-
   return (
     <div className="w-full px-12 py-6 h-full min-h-screen">
       <div className="h-[50px] w-[320px] px-6  bg-[#CAE5F1] flex items-center rounded-full">
@@ -46,13 +70,11 @@ export default function Allnotes() {
           <div className="flex text-[#677480] items-center gap-3 ">
             <button
               className="cursor-pointer active:scale-105"
-
             >
               Latest
             </button>
             <button
               className="cursor-pointer active:scale-105"
-  
             >
               Oldest
             </button>
@@ -69,14 +91,14 @@ export default function Allnotes() {
               data?.data.map((item: noteData) => (
                 <div
                   key={item.id}
-                  onClick={() => navigate(`/note/${item.id}`)}
+                  onClick={() => navigate(`/note/${item.id}`)} 
                   className="w-[250px] active:scale-105 transition-all duration-150 cursor-pointer h-[250px] rounded-lg shadow-lg"
                 >
                   <div className="flex flex-col py-3 justify-between gap-4 h-full">
                     <div className="w-full relative h-[150px] shadow-sm">
                       <div
                         className="right-0 top-2 absolute"
-                        onClick={(e) => e.stopPropagation()}
+                        onClick={(e) => e.stopPropagation()} 
                       >
                         <Popover>
                           <PopoverTrigger>
@@ -84,9 +106,9 @@ export default function Allnotes() {
                           </PopoverTrigger>
                           <PopoverContent className='bg-[#346e9e] text-white'>
                             <div className="gap-4 font-medium flex flex-col items-start ">
-                              <button>
+                              <button onClick={() => deleteData(item.id)}>
                                 <span>Delete</span>
-                              </button>
+                              </button> 
                               <button>
                                 <span>Open</span>
                               </button>

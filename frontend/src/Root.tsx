@@ -2,7 +2,7 @@ import { Outlet } from "react-router-dom";
 import Navbar from "./components/Navbar";
 import Sidebar from "./components/Sidebar";
 import { EdgeStoreProvider } from "./lib/edgestore";
-
+import { Toaster } from './components/ui/toaster.tsx'
 
 export default  function Root() {
   return (
@@ -15,6 +15,7 @@ export default  function Root() {
           <Sidebar />
           <Outlet />
         </div>
+        <Toaster />
       </div>
     </EdgeStoreProvider>
   );

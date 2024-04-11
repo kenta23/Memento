@@ -15,8 +15,10 @@ router.use(bodyParser.json());
 // Enable cross-origin access control (CORS)
 router.use(bodyParser.urlencoded({ extended: false }));
 router.use(cookieParser());
+
+
 router.use(cors({
-     origin: true,
+     origin: 'http://localhost:5173',
      credentials: true
 }))
 
@@ -107,11 +109,60 @@ router.get('/favorites', async(req: CustomRequest, res) => {
      }
 })
 
+//archive note 
+router.post('/archivenote/:id', async (req, res) => {
+   const { id } = req.params;
+
+   const data = await prisma.notes.findUnique({
+     where: {
+        id: Number(id)
+     },
+   })
+   
+   if(data) {
+    const archiveValue =  !data.archived;
+
+    await prisma.notes.update({
+      where: {
+        id: Number(id)
+      },
+       data: {
+        archived: archiveValue
+       }
+    })
+   }
+})
+
+//add to favorite note 
+router.post('/favorite/:id', async (req, res) => {
+  const { id } = req.params;
+
+  const data = await prisma.notes.findUnique({
+    where: {
+       id: Number(id)
+    },
+  })
+  
+  if(data) {
+   const favoriteValue =  !data.favorite;
+
+   await prisma.notes.update({
+     where: {
+       id: Number(id)
+     },
+      data: {
+       favorite: favoriteValue
+      }
+   })
+  }
+})
+
 router.get('/ascending', async (req, res) => {
      try {
          const data = await prisma.notes.findMany({
               orderBy: {
-                   createdAt: 'asc'
+                createdAt: 'desc',
+                updatedAt: 'desc'
               },
               include: {
                     Images: true,
@@ -124,6 +175,113 @@ router.get('/ascending', async (req, res) => {
      }
 })
 
+router.get('/descending', async (req, res) => {
+  try {
+      const data = await prisma.notes.findMany({
+           orderBy: {
+                createdAt: 'desc',
+                updatedAt: 'desc'
+           },
+           include: {
+                 Images: true,
+                 Tags: true,
+           }
+      })
+      res.status(200).json(data);
+  } catch (error) {
+      res.status(404).json({ error: error });
+  }
+})
+
+//post data 
+router.post('/postdata',upload.none(), async (req: CustomRequest, res) => {
+  try {
+    const { title, note, tags, imageData } = await req.body;
+    //const parsedTags = Array.isArray(tags) ? tags.filter(tag => typeof tag === 'string') : [];
+    const parsedTags = JSON.parse(tags);
+    
+    console.log('imageData:', imageData);
+
+    // Create a data
+    const newNote = await prisma.notes.create({
+      data: {
+        userId: req.userId as string,
+        text: note ? note : "",
+        title: title ? title : "",
+        favorite: false,
+        archived: false,
+      },
+    });
+    const newTag = await prisma.tags.create({
+      data: {
+        tagNames: {
+          set: parsedTags,
+        },
+        noteId: newNote.id,
+      },
+    });
+
+    if (imageData) {
+      try {
+         if(imageData.length === 1){
+
+          const imageDataString = JSON.parse(imageData);
+
+          console.log('single url', imageDataString.url);
+          console.log('single thumbnail', imageDataString.thumb);
+          
+          await prisma.images.create({
+             data: {
+                thumbnail: imageDataString.thumb,
+                url: imageDataString.url,
+                noteId: newNote.id
+             }
+          })
+         }
+         else {
+         // Iterate over the imageData array
+          for (const imageArray of imageData) {
+              if (Array.isArray(imageArray)) {
+                  for (const imageString of imageArray) {
+                      const { url, thumb } = JSON.parse(imageString);
+                      // Create image record in the database
+                     const newImage = await prisma.images.create({
+                          data: {
+                              url,
+                              thumbnail: thumb,
+                              noteId: newNote.id
+                          }
+                      });
+                      console.log("NEW IMAGE", newImage);
+                  }
+              } else {
+                  // If it's not an array, parse the JSON string directly
+                  const { url, thumb } = JSON.parse(imageArray);
+                    await prisma.images.create({
+                      data: {
+                          url,
+                          thumbnail: thumb,
+                          noteId: newNote.id
+                      }
+                  });
+                  
+              }
+          } 
+         }
+       }
+       catch (error) {
+          console.error('Error uploading images:', error);
+      }
+  }
+    res.status(200).json({ message: "Successfully created note", newNote, newTag });
+  } catch (error) {
+    console.error("Error:", error);
+    res.status(500).json({
+      error: "Internal server error",
+    });
+  } 
+}) 
+
 //update data 
 router.post('/updatedata', async (req, res) => {
   const { title, tags, note, id, imageData } = req.body;
@@ -134,7 +292,6 @@ router.post('/updatedata', async (req, res) => {
       .status(400)
       .json({ error: "Note id is missing in the request body" });
   }
-
   const updatedData = await prisma.notes.update({
     where: {
       id: Number(id),
@@ -196,6 +353,39 @@ router.post('/updatedata', async (req, res) => {
 
   res.status(200).json(updatedData);
 })
+
+router.post('/delete/:id', async (req, res) => {
+  const { id } = req.params;
+  console.log('id to delete', id);
+   try {
+     // Delete the note
+     const deletedNote = await prisma.notes.delete({
+       where: {
+         id: Number(id),
+       },
+     });
+
+     // Delete related tags
+     await prisma.tags.deleteMany({
+       where: {
+         noteId: Number(id),
+       },
+     });
+
+     // Delete related images
+     await prisma.images.deleteMany({
+       where: {
+         noteId: Number(id),
+       },
+     });
+
+    return res.status(200).json({ "SUCCESSFULLY DELETED NOTE": deletedNote });
+   } catch (error) {
+      console.log(error);
+      res.status(400).json(error);
+   }
+})
+
 router.get('/')
 
 

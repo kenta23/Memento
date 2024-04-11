@@ -30,7 +30,7 @@ app.use(bodyParser.urlencoded({ extended: false }));
  * We need to use the cookie parser middleware to parse the cookies.
  */
 const corsOptions: CorsOptions = {
-    origin: true,
+    origin: 'http://localhost:5173',
     credentials: true,
 }
 app.use(cors(corsOptions));
@@ -74,79 +74,6 @@ app.get('/users', async (req, res) => {
 app.use('/note', router);
 
 
-
-app.post('/postdata',upload.none(), middlewareUser, async (req, res) => {
-    try {
-      const { title, note, userid, tags, imageData } = await req.body;
-      //const parsedTags = Array.isArray(tags) ? tags.filter(tag => typeof tag === 'string') : [];
-      const parsedTags = JSON.parse(tags);
-      
-      console.log('imageData:', imageData);
-
-      // Create a data
-      const newNote = await prisma.notes.create({
-        data: {
-          userId: userid,
-          text: note ? note : "",
-          title: title ? title : "",
-          favorite: false,
-          archived: false,
-        },
-      });
-      const newTag = await prisma.tags.create({
-        data: {
-          tagNames: {
-            set: parsedTags,
-          },
-          noteId: newNote.id,
-        },
-      });
-
-      if (imageData !== undefined) {
-        try {
-            // Iterate over the imageData array
-            for (const imageArray of imageData) {
-                if (Array.isArray(imageArray)) {
-                    for (const imageString of imageArray) {
-                        const { url, thumb } = JSON.parse(imageString);
-                        // Create image record in the database
-                       const newImage = await prisma.images.create({
-                            data: {
-                                url,
-                                thumbnail: thumb,
-                                noteId: newNote.id
-                            }
-                        });
-                        console.log("NEW IMAGE", newImage);
-                    }
-                } else {
-                    // If it's not an array, parse the JSON string directly
-                    const { url, thumb } = JSON.parse(imageArray);
-                      await prisma.images.create({
-                        data: {
-                            url,
-                            thumbnail: thumb,
-                            noteId: newNote.id
-                        }
-                    });
-                    
-                }
-            } 
-         }
-         catch (error) {
-            console.error('Error uploading images:', error);
-            res.status(500).json({ error: 'Internal server error' });
-        }
-    }
-      res.status(200).json({ message: "Successfully created note", newNote, newTag });
-    } catch (error) {
-      console.error("Error:", error);
-      res.status(500).json({
-        error: "Internal server error",
-      });
-    } 
-}) 
- 
 
 /*app.get('/getdata', middlewareUser, async (req: CustomRequest, res) => {
     try {

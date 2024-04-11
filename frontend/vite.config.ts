@@ -16,7 +16,7 @@ export default defineConfig({
         rewrite: (path) => path.replace(/^\/api/, ""), //the api route is just 'http:localhost:3000/'
       },
       "/postdata": {
-        target: "http://localhost:3000/",
+        target: "http://localhost:3000/api/",
         changeOrigin: true, 
       },
       "/getdata": {

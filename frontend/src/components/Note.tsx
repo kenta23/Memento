@@ -1,13 +1,16 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Archive, Camera, FolderClosed, Heart, Tags, X } from 'lucide-react';
+import { Archive, Camera, Check, FolderClosed, Heart, Tags, X } from 'lucide-react';
 import React, {  useRef, useState, KeyboardEvent } from 'react'
-import { useParams } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import axios from 'axios';
 import { useAuth } from '@clerk/clerk-react';
 import { noteData } from '@/types';
 import {  FieldValues, useForm } from 'react-hook-form'
 import { useEdgeStore } from '@/lib/edgestore';
 import { toast } from 'react-toastify';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog';
+import { deleteNote } from '@/lib/data';
+import { useToast } from './ui/use-toast';
 
 export default function Note() {
   const { id } = useParams();
@@ -166,9 +169,7 @@ function EditNote({ setEdit, data, id }: { data: noteData, setEdit:  React.Dispa
                   >
                     <Tags />
                     <span>{name}</span>
-                    <button>
                       <X />
-                    </button>
                   </div>
                 ))
               )}
@@ -180,9 +181,7 @@ function EditNote({ setEdit, data, id }: { data: noteData, setEdit:  React.Dispa
                   >
                     <Tags />
                     <span>{tag}</span>
-                    <button>
-                      <X />
-                    </button>
+                    <X />
                   </div>
               )}
             </div>
@@ -296,27 +295,97 @@ function EditNote({ setEdit, data, id }: { data: noteData, setEdit:  React.Dispa
   );
 }
 function ViewNote({ setEdit, data }: { setEdit:  React.Dispatch<React.SetStateAction<boolean>>, data: noteData}) {
+   const queryClient = useQueryClient();
+   const navigate = useNavigate();
+   const { userId } = useAuth();
+   const { toast } = useToast()
+
+  async function deletedata() {
+     try {
+      deleteNote(data.id, userId as string);
+
+      queryClient.invalidateQueries({ queryKey: ['note', 'allnotes']});
+      console.log('successfully deleted data');
+      toast({
+         title: "Deleted",
+         description: 
+          <div className='flex w-full flex-row gap-4 items-center justify-between'>
+             <p>Successfully deleted data</p>
+             <Check color='#68e988' size={24}/>
+         </div>
+      })
+      
+      setEdit(false);
+      navigate('/all-notes');
+
+     } catch (error) {
+        console.log(error);
+     }
+   }
+
+   async function archiveNote(id: number) {
+    try {
+       const data = await axios.post(`http://localhost:3000/api/archivenote/${id}`, null, {
+        headers: {
+          "Authorization": `Bearer ${userId}`
+        } 
+      })
+      console.log('successfully archived note');
+      toast({
+        title: `Archived`,
+        description: data.data.title
+      })
+      queryClient.invalidateQueries({ queryKey: ['note', 'allnotes']});
+      setEdit(false);
+      //add toast here 
+     } catch (error) {
+        console.log(error); 
+        toast({ 
+          title: "Error", 
+          description: <p>Something went wrong</p>
+      })
+     }
+   }
+
+   async function favoriteNote(id: number) {
+    try {
+      const data = await axios.post(`http://localhost:3000/api/favorite/${id}`, null, {
+       headers: {
+         "Authorization": `Bearer ${userId}`
+       } 
+     })
+     console.log('successfully added to favorites');
+     toast({
+       title: `Added to favorites`,
+       description: data.data.title
+     })
+     setEdit(false);
+     //add toast here 
+    } catch (error) {
+       console.log(error);
+       toast({ 
+         title: "Error", 
+         description: <p>Something went wrong</p>
+     })
+    }
+   }
+
+   
   return (
     <>
       {data && (
         <>
-          <div className='px-4 py-2 w-full'>
-           <div className="flex items-center space-x-1  ">
-              {data.Tags.map((tag) => 
+          <div className="px-4 py-2 w-full">
+            <div className="flex items-center space-x-1  ">
+              {data.Tags.map((tag) =>
                 tag.tagNames.map((name, i) => (
-                  <div
-                   key={i}
-                    className="flex items-center gap-1 text-red-600"
-                  >
+                  <div key={i} className="flex items-center gap-1 text-red-600">
                     <Tags />
                     <span>{name}</span>
-                    <button>
-                      <X />
-                    </button>
+                    <X />
                   </div>
                 ))
               )}
-              
             </div>
           </div>
           <div className="px-4 py-2 border w-full">
@@ -348,37 +417,60 @@ function ViewNote({ setEdit, data }: { setEdit:  React.Dispatch<React.SetStateAc
             </div>
           </div>
 
-         <div className='flex px-4 py-2 mt-12 w-full justify-between items-center'>
-         <div className="mb-6 flex-row items-center gap-4 justify-end flex me-6">
-             <Heart 
-               cursor={'pointer'}
-               color='#E26666'
-               className={`${data.favorite? 'fill-[#E26666]' : 'fill-none'}`}
-               />
-             <Archive 
-                cursor={'pointer'}
-                color='#3D603D'
-                className={`${data.archived? 'fill-[#3D603D]' : 'fill-none'}`}
-             />
-             <FolderClosed 
-                cursor={'pointer'}
-                color='#3E3BC8'
-                className={``}
-             />
-          </div>
-          <div className="mb-6 flex-row items-center gap-4 justify-end flex me-6">
-            <button className="bg-[#DE2828] active:bg-[#3f8152] px-6 py-2 rounded-lg shadow-md">
-              <span className="text-white">Delete</span>
-            </button>
+          <div className="flex px-4 py-2 mt-12 w-full justify-between items-center">
+            <div className="mb-6 flex-row items-center gap-4 justify-end flex me-6">
+              <Heart
+                cursor={"pointer"}
+                color="#E26666"
+                className={`${data.favorite ? "fill-[#E26666]" : "fill-none"}`}
+                onClick={() => favoriteNote(data.id)}
+              />
+              <Archive
+                cursor={"pointer"}
+                color="#3D603D"
+                className={`${data.archived ? "fill-[#3D603D]" : "fill-none"}`}
+                onClick={() => archiveNote(data.id)}
+              />
+              <FolderClosed cursor={"pointer"} color="#3E3BC8" className={``} />
+            </div>
+            <div className="mb-6 flex-row items-center gap-4 justify-end flex me-6">
+              <Dialog>
+                <div className="flex items-center gap-1 text-[#3B95C8]">
+                  <DialogTrigger>
+                    <span className="text-white bg-[#DE2828] active:bg-[#3f8152] px-6 py-2 rounded-lg shadow-md">
+                      Delete
+                    </span>
+                  </DialogTrigger>
+                  <DialogContent className="bg-slate-100 shadow-xl space-y-6">
+                    <DialogHeader>
+                      <DialogTitle>
+                        <p>Delete note</p>
+                      </DialogTitle>
+                      <DialogDescription>
+                          <span>
+                            Are you sure you want to delete this note?
+                          </span>
 
-            <button
-              onClick={() => setEdit(true)}
-              className="bg-[#E0C460] active:bg-[#3f8152] px-6 py-2 rounded-lg shadow-md"
-            >
-              <span className="text-white">Edit</span>
-            </button>
+                            <button
+                              onClick={deletedata}
+                              className="bg-[#DE2828] active:bg-[#813f3f] px-6 py-2 mx-6 rounded-lg shadow-md"
+                            >
+                              <span className="text-white">Delete</span>
+                            </button>
+                      </DialogDescription>
+                    </DialogHeader>
+                  </DialogContent>
+                </div>
+              </Dialog>
+
+              <button
+                onClick={() => setEdit(true)}
+                className="bg-[#E0C460] active:bg-[#3f8152] px-6 py-2 rounded-lg shadow-md"
+              >
+                <span className="text-white">Edit</span>
+              </button>
+            </div>
           </div>
-         </div>
         </>
       )}
     </>
