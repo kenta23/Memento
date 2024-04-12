@@ -3,40 +3,54 @@ import { useAuth } from '@clerk/clerk-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
 import { Archive, Check, EllipsisVertical, Heart } from 'lucide-react'
-import {  useState } from 'react';
+import {  useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom'
 import { noteData } from '@/types';
 import { Popover, PopoverContent, PopoverTrigger} from '../../@/components/ui/popover'
 import { formatDate } from '@/lib/formats';
 import { useToast } from './ui/use-toast';
+import { useDebouncedCallback } from 'use-debounce'
 
+
+enum orderBy {
+   asc = "asc",
+   desc = "desc"
+}
 
 export default function Allnotes() {
   const queryclient = useQueryClient();
   const navigate = useNavigate();
   const { toast } = useToast();
   const { userId } = useAuth();
-  const [open, setOpen] = useState<boolean>(false);
+  const [order, setOrder] = useState<orderBy>(orderBy.desc);
+
+  const [value, setValue] = useState<string>('');
+  const debouncedVal = useDebouncedCallback((val) => {
+            setValue(val)
+  }, 1000)
 
   const { data, isPending, isError, isLoading, status } = useQuery({
      queryKey: ['allnotes'],
-     queryFn: async () => await axios.get('/getdata', {
+     queryFn: async () => await axios.get(`/getdata?q=${value}`, {
           headers: { Authorization: `Bearer ${userId}` },
      }),
-     _optimisticResults: 'optimistic'
+     _optimisticResults: 'isRestoring'
   })
 
-  console.log(data);
   
-  async function deleteData(id: number) {
+  useEffect(() => {
+      if(value) {
+        queryclient.invalidateQueries({ queryKey: ['allnotes']})
+       }
+  }, [queryclient, value])
+  
+  async function deleteData(id: number) { 
     try {
-      const res = await axios.post(`http://localhost:3000/api/delete/${id}`, null, {
-  
+      await axios.post(`http://localhost:3000/api/delete/${id}`, null, {
           headers: {
               'Authorization': `Bearer ${userId}`,
           }
       })
-      console.log(res.data);
       toast({
         title: "Deleted",
         description: 
@@ -50,13 +64,59 @@ export default function Allnotes() {
        console.log(error)
      }
   }
-  
 
   // Sort by createdAt property in ascending order (oldest to newest)
+  async function sortAsc() {
+    setOrder(orderBy.asc);
+    try {
+       await axios.post('/ascending', order, {
+        headers: {
+          'Authorization': `Bearer ${userId}`,
+        }
+      })
+
+      queryclient.invalidateQueries({ queryKey: ['allnotes']})
+      toast({
+         title: "Sorted",
+         description: "Sorted data in ascending order"
+      })
+    } catch (error) {
+      console.log(error)
+      toast({
+         title: "Error",
+         description: "Something went wrong"
+      })
+    }
+  }
+
+  async function sortDesc() {
+    setOrder(orderBy.desc);
+    try {
+       await axios.post('/ascending', order, {
+        headers: {
+          'Authorization': `Bearer ${userId}`,
+        }
+      })
+
+      queryclient.invalidateQueries({ queryKey: ['allnotes']})
+      toast({
+         title: "Sorted",
+         description: "Sorted data in descending order"
+      })
+    } catch (error) {
+      console.log(error)
+      toast({
+         title: "Error",
+         description: "Something went wrong"
+      })
+    }
+  }
   return (
     <div className="w-full px-12 py-6 h-full min-h-screen">
       <div className="h-[50px] w-[320px] px-6  bg-[#CAE5F1] flex items-center rounded-full">
         <input
+          defaultValue={value}
+          onChange={(e) => debouncedVal(e.target.value)}
           placeholder="Search"
           className="outline-none bg-transparent z-10 py-2 w-full"
         />
@@ -70,11 +130,13 @@ export default function Allnotes() {
           <div className="flex text-[#677480] items-center gap-3 ">
             <button
               className="cursor-pointer active:scale-105"
+              onClick={sortAsc}
             >
               Latest
             </button>
             <button
               className="cursor-pointer active:scale-105"
+              onClick={sortDesc}
             >
               Oldest
             </button>
@@ -109,7 +171,7 @@ export default function Allnotes() {
                               <button onClick={() => deleteData(item.id)}>
                                 <span>Delete</span>
                               </button> 
-                              <button>
+                              <button onClick={() => navigate(`/note/${item.id}`)}>
                                 <span>Open</span>
                               </button>
                             </div>

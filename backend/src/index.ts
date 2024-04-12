@@ -9,7 +9,6 @@ import router from './routes/handler';
 import { imageDataType } from './types';
 import cookieParser from 'cookie-parser';
 import multer from 'multer';
-import clerkclient from '@clerk/clerk-sdk-node';
 
 
 export interface CustomRequest extends Request {
@@ -48,15 +47,6 @@ const handler = createEdgeStoreExpressHandler({
      router: edgeStoreRouter
 })
 
-const middlewareUser: RequestHandler<{}, {}, any, any, {}> = async (req: CustomRequest, res, next) => {
-    const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1];
-  
-    if (!token) return res.status(401).json({ message: "Invalid token" });
-  
-    req.userId = token; // Assign value to userId property
-    next();
-};
 //EXPRESS ROUTES 
 app.get('/edgestore/*', handler);
 app.post('/edgestore/*', handler);
@@ -72,26 +62,6 @@ app.get('/users', async (req, res) => {
 })
 
 app.use('/note', router);
-
-
-
-/*app.get('/getdata', middlewareUser, async (req: CustomRequest, res) => {
-    try {
-        const userId = req.userId;
-
-        const data = await prisma.notes.findMany({
-            where: { userId: userId },
-            include: { Tags: true, Images: true}
-        })
-
-        res.status(200).json(data);
-
-    } catch (error) {
-        console.log(error)
-    } 
-    
-}) */
-
 
 app.use('/api', router);
 

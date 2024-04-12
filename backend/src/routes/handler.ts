@@ -40,20 +40,41 @@ router.use(middlewareUser);
 
 router.get('/getdata', async (req: CustomRequest, res) => {
      try {
+         const { q } = req.query;
          const userId = req.userId;
- 
-         const data = await prisma.notes.findMany({
-             where: { userId: userId },
-             include: { Tags: true, Images: true}
+         let data;
+
+       if(q) {
+          data = await prisma.notes.findMany({
+          where: {
+            userId: userId,
+           AND: [
+             {
+               title: { contains: q as string }
+             }
+           ]
+          },
+          include: { Tags: true, Images: true },
+        })
+       }  
+
+       else {
+         data = await prisma.notes.findMany({
+          where: {userId: userId},
+          include: { Tags: true, Images: true },
+          orderBy: { updatedAt: 'desc'}
          })
- 
+       } 
+
          res.status(200).json(data);
- 
+
      } catch (error) {
          res.status(404).json({ error: error });
      } 
      
  })
+
+
  router.get('/note/:id', async (req: CustomRequest, res) => {
      const { id } = req.params;
      console.log('params', id)
@@ -64,7 +85,8 @@ router.get('/getdata', async (req: CustomRequest, res) => {
           include: {
                Images: true,
                Tags: true,
-          }
+          },
+          orderBy: { updatedAt: 'desc' }
       })
       res.status(200).json(data);
     } catch (error) {
@@ -83,7 +105,8 @@ router.get('/archive', async (req: CustomRequest, res) => {
                include: {
                      Images: true,
                      Tags: true,
-               }
+               },
+               orderBy: { updatedAt: 'desc' }
           })
           res.status(200).json(data);
       } catch (error) {
@@ -101,7 +124,8 @@ router.get('/favorites', async(req: CustomRequest, res) => {
               include: {
                     Images: true,
                     Tags: true,
-              }
+              },
+              orderBy: { updatedAt: 'desc'}
          })
          res.status(200).json(data);
      } catch (error) {

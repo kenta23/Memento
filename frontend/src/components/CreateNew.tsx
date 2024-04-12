@@ -3,7 +3,6 @@ import React, { useRef, useState, KeyboardEvent } from 'react'
 import HashtagInput from './Tags'
 import axios from 'axios';
 import { useMutation } from '@tanstack/react-query';
-import { toast } from 'react-toastify';
 import {  useUser } from '@clerk/clerk-react';
 import { useEdgeStore } from '@/lib/edgestore';
 import { useForm, FieldValues } from 'react-hook-form'
@@ -27,7 +26,7 @@ export default function CreateNew() {
       url: '',
       thumb: ''
     }])
-    const {data, isError, mutate, status, isPending, reset } = useMutation({
+    const {data, mutate, status, isPending, reset } = useMutation({
       mutationFn: async (newdata: FormData) => await axios.post('/postdata', newdata, {
           headers: {
              "Content-Type": "application/json",
