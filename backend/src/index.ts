@@ -29,7 +29,7 @@ app.use(bodyParser.urlencoded({ extended: false }));
  * We need to use the cookie parser middleware to parse the cookies.
  */
 const corsOptions: CorsOptions = {
-    origin: 'http://localhost:5173',
+    origin: '*',
     credentials: true,
 }
 app.use(cors(corsOptions));
@@ -65,6 +65,9 @@ app.use('/note', router);
 
 app.use('/api', router);
 
+app.get('/', (req, res) => {
+    res.send('Hello World!');
+})
 app.listen(port, () => {
     console.log(`Server is listening on port ${port}`);
 })
