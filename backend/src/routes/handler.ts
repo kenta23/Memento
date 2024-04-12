@@ -1,11 +1,10 @@
 import express, { RequestHandler } from 'express';
 import dotenv from 'dotenv';
 import bodyParser from 'body-parser';
-import cors, { CorsOptions } from 'cors';
+import cors from 'cors';
 import cookieParser from 'cookie-parser'
-import { Prisma, PrismaClient } from '@prisma/client';
+import {  PrismaClient } from '@prisma/client';
 import multer from 'multer';
-import { imageDataType } from '../types';
 import { CustomRequest } from '..';
 
 dotenv.config();

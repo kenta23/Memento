@@ -6,7 +6,6 @@ import { initEdgeStore } from '@edgestore/server';
 import { createEdgeStoreExpressHandler } from '@edgestore/server/adapters/express';
 import { PrismaClient } from '@prisma/client';
 import router from './routes/handler'; 
-import { imageDataType } from './types';
 import cookieParser from 'cookie-parser';
 import multer from 'multer';
 
